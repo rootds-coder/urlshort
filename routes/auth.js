@@ -36,7 +36,7 @@ const generateOTP = () => {
 // Send OTP email
 const sendOTPEmail = async (email, otp) => {
     const info = await transporter.sendMail({
-        from: '"URL Shortener" <bgmi-india@bgmi-india.serv00.net>',
+        from: `"URL Shortener" <${process.env.EMAIL_USER}>`,
         to: email,
         subject: 'Email Verification OTP',
         html: `
@@ -433,7 +433,7 @@ router.post('/forgot', async (req, res) => {
         
         // Send the email
         const info = await transporter.sendMail({
-            from: '"URL Shortener" <bgmi-india@bgmi-india.serv00.net>',
+            from: `"URL Shortener" <${process.env.EMAIL_USER}>`,
             to: email,
             subject: 'Password Reset Request',
             text: `You are receiving this because you (or someone else) has requested the reset of the password for your account.\n\n
