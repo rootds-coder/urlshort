@@ -1,0 +1,37 @@
+/* Custom styles */
+.transition-colors {
+    transition: all 0.3s ease;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* URL input focus effect */
+input[type="url"]:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Copy button hover effect */
+button:hover svg {
+    transform: scale(1.1);
+}
+
+/* Smooth transitions */
+a, button {
+    transition: all 0.2s ease;
+} 

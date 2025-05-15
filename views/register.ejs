@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - URL Shortener</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-gray-800 p-4 sm:p-8 rounded-lg shadow-xl w-full max-w-sm border border-gray-700">
+        <h1 class="text-2xl font-bold mb-6 text-center text-white">Register</h1>
+        
+        <% if (typeof error !== 'undefined') { %>
+            <div class="bg-gray-800 border border-gray-700 text-gray-300 px-4 py-3 rounded mb-4 text-sm">
+                <%= error %>
+            </div>
+        <% } %>
+
+        <form id="registerForm" action="/auth/register" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-gray-300 text-sm font-bold mb-2" for="username">
+                    Username
+                </label>
+                <input class="shadow appearance-none border border-gray-700 rounded w-full py-2 px-3 text-gray-300 bg-gray-700 leading-tight focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    id="username" type="text" name="username" required minlength="3" maxlength="30">
+            </div>
+            
+            <div>
+                <label class="block text-gray-300 text-sm font-bold mb-2" for="email">
+                    Email
+                </label>
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                    <input class="shadow appearance-none border border-gray-700 rounded w-full py-2 px-3 text-gray-300 bg-gray-700 leading-tight focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        id="email" type="email" name="email" required>
+                    <button type="button" id="sendOtpBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out whitespace-nowrap">
+                        Send OTP
+                    </button>
+                </div>
+                <p class="text-xs text-gray-400 mt-1">Only Gmail, Outlook, and Hotmail emails are allowed</p>
+            </div>
+
+            <div id="otpSection" class="hidden">
+                <label class="block text-gray-300 text-sm font-bold mb-2" for="otp">
+                    OTP
+                </label>
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                    <input class="shadow appearance-none border border-gray-700 rounded w-full py-2 px-3 text-gray-300 bg-gray-700 leading-tight focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        id="otp" type="text" name="otp" required pattern="[0-9]{6}" maxlength="6">
+                    <button type="button" id="verifyOtpBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-150 ease-in-out whitespace-nowrap">
+                        Verify
+                    </button>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-gray-300 text-sm font-bold mb-2" for="password">
+                    Password
+                </label>
+                <input class="shadow appearance-none border border-gray-700 rounded w-full py-2 px-3 text-gray-300 bg-gray-700 leading-tight focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    id="password" type="password" name="password" required minlength="6">
+            </div>
+
+            <div>
+                <label class="block text-gray-300 text-sm font-bold mb-2" for="secretCode">
+                    Secret Code
+                </label>
+                <input class="shadow appearance-none border border-gray-700 rounded w-full py-2 px-3 text-gray-300 bg-gray-700 leading-tight focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    id="secretCode" type="text" name="secretCode" required>
+                <p class="text-xs text-gray-400 mt-1">Please enter the secret code to register</p>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 w-full transition duration-150 ease-in-out"
+                    type="submit" id="submitBtn" disabled>
+                    Register
+                </button>
+            </div>
+        </form>
+
+        <div class="mt-4 text-center">
+            <p class="text-sm text-gray-400">
+                Already have an account? 
+                <a href="/login" class="text-blue-400 hover:text-blue-300 transition duration-150 ease-in-out">Login here</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const emailInput = document.getElementById('email');
+            const sendOtpBtn = document.getElementById('sendOtpBtn');
+            const otpSection = document.getElementById('otpSection');
+            const otpInput = document.getElementById('otp');
+            const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+            const submitBtn = document.getElementById('submitBtn');
+            const registerForm = document.getElementById('registerForm');
+            const secretCodeInput = document.getElementById('secretCode');
+
+            // Disable form submission until OTP is verified and secret code is correct
+            submitBtn.disabled = true;
+
+            // Check secret code
+            secretCodeInput.addEventListener('input', function() {
+                if (this.value === '<%= process.env.SECRET_CODE %>') {
+                    this.classList.remove('border-red-700');
+                    this.classList.add('border-green-700');
+                } else {
+                    this.classList.remove('border-green-700');
+                    this.classList.add('border-red-700');
+                }
+            });
+
+            // Send OTP
+            sendOtpBtn.addEventListener('click', async function() {
+                const email = emailInput.value;
+                if (!email) {
+                    alert('Please enter your email first');
+                    return;
+                }
+
+                try {
+                    sendOtpBtn.disabled = true;
+                    sendOtpBtn.textContent = 'Sending...';
+                    
+                    const response = await fetch('/auth/send-otp', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        alert('OTP sent successfully! Please check your email.');
+                        otpSection.classList.remove('hidden');
+                    } else {
+                        alert(data.error || 'Error sending OTP');
+                    }
+                } catch (error) {
+                    alert('Error sending OTP');
+                } finally {
+                    sendOtpBtn.disabled = false;
+                    sendOtpBtn.textContent = 'Send OTP';
+                }
+            });
+
+            // Verify OTP
+            verifyOtpBtn.addEventListener('click', async function() {
+                const email = emailInput.value;
+                const otp = otpInput.value;
+
+                if (!email || !otp) {
+                    alert('Please enter both email and OTP');
+                    return;
+                }
+
+                try {
+                    verifyOtpBtn.disabled = true;
+                    verifyOtpBtn.textContent = 'Verifying...';
+                    
+                    const response = await fetch('/auth/verify-otp', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email, otp })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        alert('OTP verified successfully!');
+                        otpInput.readOnly = true;
+                        verifyOtpBtn.disabled = true;
+                        // Only enable submit if secret code is also correct
+                        if (secretCodeInput.value === '<%= process.env.SECRET_CODE %>') {
+                            submitBtn.disabled = false;
+                        }
+                    } else {
+                        alert(data.error || 'Invalid OTP');
+                    }
+                } catch (error) {
+                    alert('Error verifying OTP');
+                } finally {
+                    verifyOtpBtn.disabled = false;
+                    verifyOtpBtn.textContent = 'Verify';
+                }
+            });
+
+            // Form submission
+            registerForm.addEventListener('submit', function(e) {
+                if (submitBtn.disabled) {
+                    e.preventDefault();
+                    alert('Please verify your email with OTP first and enter the correct secret code');
+                }
+                if (secretCodeInput.value !== '<%= process.env.SECRET_CODE %>') {
+                    e.preventDefault();
+                    alert('Invalid secret code');
+                }
+            });
+        });
+    </script>
+</body>
+</html> 
