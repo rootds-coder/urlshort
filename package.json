@@ -31,6 +31,8 @@
     "mongoose": "^8.0.3",
     "nanoid": "^5.0.4",
     "nodemailer": "^6.9.7",
+    "shortid": "^2.2.16",
+    "valid-url": "^1.0.9",
     "validator": "^13.11.0"
   },
   "devDependencies": {
