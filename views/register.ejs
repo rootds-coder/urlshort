@@ -198,18 +198,7 @@
             // Disable form submission until OTP is verified and secret code is correct
             submitBtn.disabled = true;
 
-            // Check secret code
-            secretCodeInput.addEventListener('input', function() {
-                if (this.value === '<%= process.env.SECRET_CODE %>') {
-                    this.classList.remove('border-red-700');
-                    this.classList.add('border-green-700');
-                } else {
-                    this.classList.remove('border-green-700');
-                    this.classList.add('border-red-700');
-                }
-            });
-
-            // Send OTP
+            // Send OTP with mobile support
             sendOtpBtn.addEventListener('click', async function() {
                 const email = emailInput.value;
                 if (!email) {
@@ -219,7 +208,7 @@
 
                 try {
                     sendOtpBtn.disabled = true;
-                    sendOtpBtn.textContent = 'Sending...';
+                    sendOtpBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending...';
                     
                     const response = await fetch('/auth/send-otp', {
                         method: 'POST',
@@ -234,6 +223,10 @@
                     if (response.ok) {
                         alert('OTP sent successfully! Please check your email.');
                         otpSection.classList.remove('hidden');
+                        // Focus on OTP input after it becomes visible
+                        setTimeout(() => {
+                            otpInput.focus();
+                        }, 100);
                     } else {
                         alert(data.error || 'Error sending OTP');
                     }
@@ -241,7 +234,7 @@
                     alert('Error sending OTP');
                 } finally {
                     sendOtpBtn.disabled = false;
-                    sendOtpBtn.textContent = 'Send OTP';
+                    sendOtpBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Send OTP';
                 }
             });
 
@@ -288,15 +281,46 @@
                 }
             });
 
-            // Form submission
+            // Form submission with improved mobile support
             registerForm.addEventListener('submit', function(e) {
                 if (submitBtn.disabled) {
                     e.preventDefault();
                     alert('Please verify your email with OTP first and enter the correct secret code');
+                    return;
                 }
                 if (secretCodeInput.value !== '<%= process.env.SECRET_CODE %>') {
                     e.preventDefault();
                     alert('Invalid secret code');
+                    return;
+                }
+            });
+
+            // Add touch event support for mobile
+            const addTouchSupport = (element) => {
+                element.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    this.click();
+                }, { passive: false });
+            };
+
+            // Add touch support to buttons
+            addTouchSupport(sendOtpBtn);
+            addTouchSupport(verifyOtpBtn);
+            addTouchSupport(submitBtn);
+
+            // Update secret code validation to enable submit button
+            secretCodeInput.addEventListener('input', function() {
+                if (this.value === '<%= process.env.SECRET_CODE %>') {
+                    this.classList.remove('border-red-700');
+                    this.classList.add('border-green-700');
+                    // Enable submit button if OTP is verified
+                    if (otpInput.readOnly) {
+                        submitBtn.disabled = false;
+                    }
+                } else {
+                    this.classList.remove('border-green-700');
+                    this.classList.add('border-red-700');
+                    submitBtn.disabled = true;
                 }
             });
         });
