@@ -4,7 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const { nanoid } = require('nanoid');
-const Url = require('./models/url');
+const URL = require('./models/URL');
 require('dotenv').config();
 const auth = require('./middleware/auth');
 
@@ -136,7 +136,7 @@ app.get('/register', (req, res) => {
 
 app.get('/main', auth, async (req, res) => {
     try {
-        const urls = await Url.find({ user: req.user._id }).sort({ createdAt: -1 });
+        const urls = await URL.find({ user: req.user._id }).sort({ createdAt: -1 });
         res.render('index', { 
             baseUrl: req.protocol + '://' + req.get('host'),
             user: req.user,
@@ -174,7 +174,7 @@ app.post('/shorten', auth, async (req, res) => {
 
         // Check if custom short code is already in use
         if (customShortCode) {
-            const existingUrl = await Url.findOne({ shortUrl: customShortCode });
+            const existingUrl = await URL.findOne({ shortUrl: customShortCode });
             if (existingUrl) {
                 return res.status(400).json({ error: 'Custom short code already exists' });
             }
@@ -187,7 +187,7 @@ app.post('/shorten', auth, async (req, res) => {
         const expiryTime = calculateExpiry(expiry);
 
         // Store in database
-        const newUrl = await Url.create({
+        const newUrl = await URL.create({
             fullUrl,
             shortUrl: shortCode,
             createdAt: new Date(),
@@ -220,7 +220,7 @@ app.get('/admin', auth, async (req, res) => {
             await mongoose.connect(process.env.MONGODB_URI);
         }
 
-        const urls = await Url.find({ user: req.user._id }).sort({ createdAt: -1 });
+        const urls = await URL.find({ user: req.user._id }).sort({ createdAt: -1 });
         res.render('admin', { user: req.user, urls });
     } catch (error) {
         res.status(500).render('error', { error: 'Error loading admin panel' });
@@ -230,7 +230,7 @@ app.get('/admin', auth, async (req, res) => {
 // Delete all URLs route
 app.delete('/urls/delete-all', auth, async (req, res) => {
     try {
-        const result = await Url.deleteMany({ user: req.user._id });
+        const result = await URL.deleteMany({ user: req.user._id });
         res.json({ message: 'All URLs deleted successfully' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to delete URLs' });
@@ -240,7 +240,7 @@ app.delete('/urls/delete-all', auth, async (req, res) => {
 // Delete URL route
 app.delete('/urls/:urlId', auth, async (req, res) => {
     try {
-        const url = await Url.findOneAndDelete({
+        const url = await URL.findOneAndDelete({
             _id: req.params.urlId,
             user: req.user._id
         });
@@ -258,7 +258,7 @@ app.delete('/urls/:urlId', auth, async (req, res) => {
 // Redirect route
 app.get('/:shortUrl', async (req, res) => {
     try {
-        const url = await Url.findOne({ shortUrl: req.params.shortUrl });
+        const url = await URL.findOne({ shortUrl: req.params.shortUrl });
         
         if (!url) {
             return res.status(404).render('error', { error: 'URL not found' });

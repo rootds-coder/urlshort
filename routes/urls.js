@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Url = require('../models/url');
+const URL = require('../models/URL');
 const auth = require('../middleware/auth');
 const validUrl = require('valid-url');
 const shortid = require('shortid');
@@ -20,7 +20,7 @@ router.post('/shorten', auth, async (req, res) => {
 
         let shortCode = customShortCode;
         if (customShortCode) {
-            const existingUrl = await Url.findOne({ shortUrl: customShortCode });
+            const existingUrl = await URL.findOne({ shortUrl: customShortCode });
             if (existingUrl) {
                 return res.status(400).json({ error: 'Custom short code already exists' });
             }
@@ -32,7 +32,7 @@ router.post('/shorten', auth, async (req, res) => {
         const minutes = parseInt(expiry) || 1440; // Default 24 hours
         const expiresAt = new Date(now.getTime() + minutes * 60000);
 
-        const url = new Url({
+        const url = new URL({
             fullUrl,
             shortUrl: shortCode,
             user: req.user._id,
@@ -49,7 +49,7 @@ router.post('/shorten', auth, async (req, res) => {
 // Delete URL route
 router.delete('/:urlId', auth, async (req, res) => {
     try {
-        const url = await Url.findOneAndDelete({
+        const url = await URL.findOneAndDelete({
             _id: req.params.urlId,
             user: req.user._id
         });
@@ -67,7 +67,7 @@ router.delete('/:urlId', auth, async (req, res) => {
 // Get user's URLs
 router.get('/my-urls', auth, async (req, res) => {
     try {
-        const urls = await Url.find({ user: req.user._id })
+        const urls = await URL.find({ user: req.user._id })
             .sort({ createdAt: -1 });
         res.json(urls);
     } catch (error) {
@@ -78,7 +78,7 @@ router.get('/my-urls', auth, async (req, res) => {
 // Redirect route
 router.get('/:shortUrl', async (req, res) => {
     try {
-        const url = await Url.findOne({ shortUrl: req.params.shortUrl });
+        const url = await URL.findOne({ shortUrl: req.params.shortUrl });
         
         if (!url) {
             return res.status(404).json({ error: 'URL not found' });

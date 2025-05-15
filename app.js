@@ -5,7 +5,7 @@ const path = require('path');
 require('dotenv').config();
 const cors = require('cors');
 const auth = require('./middleware/auth');
-const Url = require('./models/url');
+const URL = require('./models/URL');
 
 const app = express();
 
@@ -72,7 +72,7 @@ app.get('/admin', auth, async (req, res) => {
             await mongoose.connect(process.env.MONGODB_URI);
         }
 
-        const urls = await Url.find({ user: req.user._id }).sort({ createdAt: -1 });
+        const urls = await URL.find({ user: req.user._id }).sort({ createdAt: -1 });
         res.render('admin', { user: req.user, urls });
     } catch (error) {
         res.status(500).render('error', { error: 'Error loading admin panel' });
