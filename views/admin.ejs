@@ -265,10 +265,15 @@
             color: rgba(239, 68, 68, 0.7);
             transition: all 0.3s ease;
             position: relative;
+            padding: 8px;
+            border-radius: 8px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
-        .delete-btn:hover {
+        .delete-btn:hover, .delete-btn:active {
             color: rgba(239, 68, 68, 1);
             transform: scale(1.1);
+            background: rgba(239, 68, 68, 0.1);
         }
         .delete-btn::after {
             content: '';
@@ -283,19 +288,22 @@
             transition: opacity 0.3s ease;
             pointer-events: none;
         }
-        .delete-btn:hover::after {
+        .delete-btn:hover::after, .delete-btn:active::after {
             opacity: 1;
-        }
-        .delete-btn:active {
-            transform: scale(0.95);
         }
         .delete-all-btn {
             background: rgba(239, 68, 68, 0.1);
             border: 1px solid rgba(239, 68, 68, 0.2);
             color: rgba(239, 68, 68, 0.8);
             transition: all 0.3s ease;
+            padding: 12px 24px;
+            border-radius: 12px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            min-width: 140px;
+            text-align: center;
         }
-        .delete-all-btn:hover {
+        .delete-all-btn:hover, .delete-all-btn:active {
             background: rgba(239, 68, 68, 0.15);
             border-color: rgba(239, 68, 68, 0.3);
             box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
@@ -384,16 +392,18 @@
         <!-- URLs Table -->
         <div class="glass-card rounded-2xl overflow-hidden mb-12 fade-in" style="animation-delay: 0.4s">
             <div class="p-8 border-b border-white/5">
-                <div class="flex justify-between items-center">
+                <div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
                     <h2 class="text-2xl font-bold gradient-text">Your URLs</h2>
-                    <button onclick="showDeleteAllModal()" 
-                            class="delete-all-btn px-6 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all duration-300">
-                        <i class="fas fa-trash-alt mr-2"></i>Delete All
-                    </button>
-                    <button onclick="showDeleteAccountModal()" 
-                            class="delete-all-btn px-6 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all duration-300 mt-4">
-                        <i class="fas fa-user-slash mr-2"></i>Delete My Account
-                    </button>
+                    <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                        <button onclick="showDeleteAllModal()" 
+                                class="delete-all-btn focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all duration-300">
+                            <i class="fas fa-trash-alt mr-2"></i>Delete All
+                        </button>
+                        <button onclick="showDeleteAccountModal()" 
+                                class="delete-all-btn focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all duration-300">
+                            <i class="fas fa-user-slash mr-2"></i>Delete Account
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="overflow-x-auto">
@@ -1072,6 +1082,14 @@
         });
         document.getElementById('deleteAccountModal').addEventListener('click', (e) => {
             if (e.target === e.currentTarget) hideDeleteAccountModal();
+        });
+
+        // Add touch support for delete buttons
+        document.querySelectorAll('.delete-btn, .delete-all-btn').forEach(button => {
+            button.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                this.click();
+            }, { passive: false });
         });
     </script>
     <!-- Footer -->
