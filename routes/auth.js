@@ -9,12 +9,12 @@ const nodemailer = require('nodemailer');
 
 // Email configuration
 const emailConfig = {
-    host: 'mail9.serv00.com',
-    port: 587,
+    host: process.env.EMAIL_HOST,
+    port: process.env.EMAIL_PORT,
     secure: false,
     auth: {
-        user: 'bgmi-india@bgmi-india.serv00.net',
-        pass: 'B2ahikct6i@'
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
     }
 };
 
