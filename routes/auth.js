@@ -6,6 +6,7 @@ const OTP = require('../models/OTP');
 const auth = require('../middleware/auth');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const URL = require('../models/URL');
 
 // Email configuration
 const emailConfig = {
@@ -647,6 +648,18 @@ router.post('/reset/:token', async (req, res) => {
         res.redirect('/login');
     } catch (error) {
         res.render('reset', { error: 'Error resetting password.', token: req.params.token });
+    }
+});
+
+// Delete account route
+router.delete('/delete-account', auth, async (req, res) => {
+    try {
+        await URL.deleteMany({ user: req.user._id });
+        await User.findByIdAndDelete(req.user._id);
+        res.clearCookie('token');
+        res.json({ message: 'Account deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to delete account' });
     }
 });
 
