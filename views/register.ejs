@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - LinkSnap</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        body {
+            background: #fafbfc;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* bg blobs */
+        .bg-blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            pointer-events: none;
+            z-index: 0;
+            animation: float 12s ease-in-out infinite alternate;
+        }
+
+        .blob-1 {
+            width: 400px; height: 400px;
+            background: rgba(125, 42, 232, .1);
+            top: -80px; right: -80px;
+        }
+
+        .blob-2 {
+            width: 350px; height: 350px;
+            background: rgba(6, 182, 212, .08);
+            bottom: -60px; left: -60px;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+            from { transform: translateY(0) scale(1); }
+            to { transform: translateY(-30px) scale(1.05); }
+        }
+
+        /* grid bg */
+        .grid-bg {
+            background-image:
+                linear-gradient(rgba(125, 42, 232, .03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(125, 42, 232, .03) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        /* glass card */
+        .glass-card {
+            background: rgba(255, 255, 255, .75);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 0, 0, .06);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, .06);
+        }
+
+        /* input */
+        .glass-input {
+            background: rgba(0, 0, 0, .02);
+            border: 1px solid rgba(0, 0, 0, .08);
+            transition: 0.3s;
+            color: #1a1a2e;
+        }
+
+        .glass-input:focus {
+            border-color: rgba(125, 42, 232, .4);
+            box-shadow: 0 0 0 3px rgba(125, 42, 232, .1);
+            background: #fff;
+        }
+
+        .glass-input::placeholder {
+            color: #a0a0b0;
+        }
+
+        /* button */
+        .btn-primary {
+            background: linear-gradient(135deg, #7d2ae8, #6025c0);
+            color: #fff;
+            transition: all 0.3s cubic-bezier(.4, 0, .2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(125, 42, 232, .25);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 8px 28px rgba(125, 42, 232, .4);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        /* secondary btn */
+        .btn-secondary {
+            background: rgba(125, 42, 232, .06);
+            color: #7d2ae8;
+            border: 1px solid rgba(125, 42, 232, .15);
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(125, 42, 232, .12);
+        }
+
+        /* ripple */
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 5px; height: 5px;
+            background: rgba(255, 255, 255, .5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1) translate(-50%);
+        }
+
+        .btn-primary:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+
+        @keyframes ripple {
+            0% { transform: scale(0); opacity: .5; }
+            100% { transform: scale(20); opacity: 0; }
+        }
+
+        /* fade */
+        .fade-in {
+            animation: fadeIn 0.6s cubic-bezier(.16, 1, .3, 1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* particles */
+        .snow { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
+        .snowflake {
+            position: absolute;
+            border-radius: 50%;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* validation colors */
+        .input-success { border-color: rgba(16, 185, 129, .5) !important; }
+        .input-error { border-color: rgba(239, 68, 68, .5) !important; }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-4 grid-bg relative">
+
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+    <div class="snow" id="snow"></div>
+
+    <div class="relative z-10 w-full max-w-sm">
+        <!-- Back to home -->
+        <a href="/" class="inline-flex items-center gap-2 text-gray-400 hover:text-gray-700 text-sm font-medium mb-6 transition">
+            <i class="fas fa-arrow-left text-xs"></i> Back to home
+        </a>
+
+        <div class="glass-card p-8 rounded-2xl fade-in">
+
+            <div class="text-center mb-8">
+                <a href="/" class="text-2xl font-bold text-gray-900 inline-flex items-center gap-2">
+                    ⚡ LinkSnap
+                </a>
+                <h1 class="text-xl font-bold text-gray-900 mt-4">Create your account</h1>
+                <p class="text-gray-400 text-sm mt-1">Start shortening links in seconds</p>
+            </div>
+
+            <% if (typeof error !== 'undefined') { %>
+                <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl mb-4 text-sm">
+                    <i class="fas fa-exclamation-circle mr-1"></i> <%= error %>
+                </div>
+            <% } %>
+
+            <form id="registerForm" action="/auth/register" method="POST" class="space-y-5">
+                <div>
+                    <label class="block text-gray-600 text-sm font-medium mb-2" for="username">
+                        Username
+                    </label>
+                    <input class="glass-input w-full py-3 px-4 rounded-xl focus:outline-none"
+                        id="username" type="text" name="username" required minlength="3" maxlength="30"
+                        placeholder="johndoe">
+                </div>
+
+                <div>
+                    <label class="block text-gray-600 text-sm font-medium mb-2" for="email">
+                        Email
+                    </label>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input class="glass-input w-full py-3 px-4 rounded-xl focus:outline-none"
+                            id="email" type="email" name="email" required placeholder="you@gmail.com">
+                        <button type="button" id="sendOtpBtn"
+                            class="btn-secondary font-medium py-3 px-4 rounded-xl whitespace-nowrap focus:outline-none">
+                            <i class="fas fa-paper-plane mr-2"></i>Send OTP
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1.5">Only Gmail, Outlook, and Hotmail emails are allowed</p>
+                </div>
+
+                <div id="otpSection" class="hidden">
+                    <label class="block text-gray-600 text-sm font-medium mb-2" for="otp">
+                        OTP Code
+                    </label>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input class="glass-input w-full py-3 px-4 rounded-xl focus:outline-none"
+                            id="otp" type="text" name="otp" required pattern="[0-9]{6}" maxlength="6"
+                            placeholder="123456">
+                        <button type="button" id="verifyOtpBtn"
+                            class="btn-secondary font-medium py-3 px-4 rounded-xl whitespace-nowrap focus:outline-none">
+                            <i class="fas fa-check mr-2"></i>Verify
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-gray-600 text-sm font-medium mb-2" for="password">
+                        Password
+                    </label>
+                    <input class="glass-input w-full py-3 px-4 rounded-xl focus:outline-none"
+                        id="password" type="password" name="password" required minlength="6"
+                        placeholder="••••••••">
+                </div>
+
+                <div>
+                    <label class="block text-gray-600 text-sm font-medium mb-2" for="secretCode">
+                        Secret Code
+                    </label>
+                    <input class="glass-input w-full py-3 px-4 rounded-xl focus:outline-none"
+                        id="secretCode" type="text" name="secretCode" required
+                        placeholder="Enter invite code">
+                    <p class="text-xs text-gray-400 mt-1.5">Please enter the secret code to register</p>
+                </div>
+
+                <button class="btn-primary font-semibold py-3 px-4 rounded-xl w-full text-white focus:outline-none"
+                    type="submit" id="submitBtn" disabled>
+                    <i class="fas fa-user-plus mr-2"></i>Create Account
+                </button>
+            </form>
+
+            <div class="mt-6 flex flex-col items-center">
+                <div class="flex items-center w-full mb-4">
+                    <div class="flex-grow border-t border-gray-200"></div>
+                    <span class="mx-4 text-xs text-gray-400 font-medium uppercase tracking-wider">Or register with</span>
+                    <div class="flex-grow border-t border-gray-200"></div>
+                </div>
+                
+                <div id="g_id_onload"
+                    data-client_id="<%= googleClientId %>"
+                    data-context="signup"
+                    data-ux_mode="popup"
+                    data-callback="handleGoogleCallback"
+                    data-auto_prompt="false">
+                </div>
+
+                <div class="g_id_signin"
+                    data-type="standard"
+                    data-shape="rectangular"
+                    data-theme="outline"
+                    data-text="signup_with"
+                    data-size="large"
+                    data-logo_alignment="left"
+                    style="width: 100%; display: flex; justify-content: center;">
+                </div>
+            </div>
+
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-400">
+                    Already have an account?
+                    <a href="/login" class="text-purple-600 hover:text-purple-800 font-medium transition">Sign in</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function handleGoogleCallback(response) {
+            try {
+                const btn = document.getElementById('submitBtn');
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Verifying Google login...';
+                
+                const res = await fetch('/auth/google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential: response.credential })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok && data.success) {
+                    window.location.href = data.redirectUrl || '/main';
+                } else {
+                    alert(data.error || 'Google registration failed');
+                    btn.innerHTML = '<i class="fas fa-user-plus mr-2"></i>Create Account';
+                }
+            } catch (error) {
+                console.error('Error with Google Sign Up', error);
+                alert('Connection error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const emailInput = document.getElementById('email');
+            const sendOtpBtn = document.getElementById('sendOtpBtn');
+            const otpSection = document.getElementById('otpSection');
+            const otpInput = document.getElementById('otp');
+            const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+            const submitBtn = document.getElementById('submitBtn');
+            const registerForm = document.getElementById('registerForm');
+            const secretCodeInput = document.getElementById('secretCode');
+
+            // Disable form submission until OTP is verified and secret code is correct
+            submitBtn.disabled = true;
+
+            // Send OTP with mobile support
+            sendOtpBtn.addEventListener('click', async function() {
+                const email = emailInput.value;
+                if (!email) {
+                    alert('Please enter your email first');
+                    return;
+                }
+
+                try {
+                    sendOtpBtn.disabled = true;
+                    sendOtpBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending...';
+                    
+                    const response = await fetch('/auth/send-otp', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        alert('OTP sent successfully! Please check your email.');
+                        otpSection.classList.remove('hidden');
+                        // Focus on OTP input after it becomes visible
+                        setTimeout(() => {
+                            otpInput.focus();
+                        }, 100);
+                    } else {
+                        alert(data.error || 'Error sending OTP');
+                    }
+                } catch (error) {
+                    alert('Error sending OTP');
+                } finally {
+                    sendOtpBtn.disabled = false;
+                    sendOtpBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Send OTP';
+                }
+            });
+
+            // Verify OTP
+            verifyOtpBtn.addEventListener('click', async function() {
+                const email = emailInput.value;
+                const otp = otpInput.value;
+
+                if (!email || !otp) {
+                    alert('Please enter both email and OTP');
+                    return;
+                }
+
+                try {
+                    verifyOtpBtn.disabled = true;
+                    verifyOtpBtn.textContent = 'Verifying...';
+                    
+                    const response = await fetch('/auth/verify-otp', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email, otp })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        alert('OTP verified successfully!');
+                        otpInput.readOnly = true;
+                        verifyOtpBtn.disabled = true;
+                        // Only enable submit if secret code is also correct
+                        if (secretCodeInput.value === '<%= process.env.SECRET_CODE %>') {
+                            submitBtn.disabled = false;
+                        }
+                    } else {
+                        alert(data.error || 'Invalid OTP');
+                    }
+                } catch (error) {
+                    alert('Error verifying OTP');
+                } finally {
+                    verifyOtpBtn.disabled = false;
+                    verifyOtpBtn.textContent = 'Verify';
+                }
+            });
+
+            // Form submission with improved mobile support
+            registerForm.addEventListener('submit', function(e) {
+                if (submitBtn.disabled) {
+                    e.preventDefault();
+                    alert('Please verify your email with OTP first and enter the correct secret code');
+                    return;
+                }
+                if (secretCodeInput.value !== '<%= process.env.SECRET_CODE %>') {
+                    e.preventDefault();
+                    alert('Invalid secret code');
+                    return;
+                }
+            });
+
+            // Add touch event support for mobile
+            const addTouchSupport = (element) => {
+                element.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    this.click();
+                }, { passive: false });
+            };
+
+            // Add touch support to buttons
+            addTouchSupport(sendOtpBtn);
+            addTouchSupport(verifyOtpBtn);
+            addTouchSupport(submitBtn);
+
+            // Update secret code validation to enable submit button
+            secretCodeInput.addEventListener('input', function() {
+                if (this.value === '<%= process.env.SECRET_CODE %>') {
+                    this.classList.remove('input-error');
+                    this.classList.add('input-success');
+                    // Enable submit button if OTP is verified
+                    if (otpInput.readOnly) {
+                        submitBtn.disabled = false;
+                    }
+                } else {
+                    this.classList.remove('input-success');
+                    this.classList.add('input-error');
+                    submitBtn.disabled = true;
+                }
+            });
+        });
+
+        // Particles
+        const colors = ['rgba(125,42,232,.25)', 'rgba(6,182,212,.2)', 'rgba(236,72,153,.15)', 'rgba(99,102,241,.15)'];
+        function createSnowflake() {
+            const snow = document.getElementById('snow');
+            const snowflake = document.createElement('div');
+            snowflake.classList.add('snowflake');
+
+            const size = Math.random() * 4 + 2;
+            snowflake.style.width = `${size}px`;
+            snowflake.style.height = `${size}px`;
+            snowflake.style.left = `${Math.random() * 100}%`;
+            snowflake.style.background = colors[Math.floor(Math.random() * colors.length)];
+
+            const duration = Math.random() * 6 + 6;
+            snowflake.style.animationDuration = `${duration}s`;
+
+            snow.appendChild(snowflake);
+            setTimeout(() => {
+                snowflake.remove();
+            }, duration * 1000);
+        }
+
+        setInterval(createSnowflake, 200);
+    </script>
+</body>
+
+</html>
