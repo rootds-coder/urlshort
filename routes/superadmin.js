@@ -80,7 +80,9 @@ router.get('/api/stats', auth, superAdmin, async (req, res) => {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         
         const recentClicks = await Click.aggregate([
-            { $match: { timestamp: { $gte: thirtyDaysAgo } } },
+            { $match: { 
+                timestamp: { $exists: true, $ne: null, $gte: thirtyDaysAgo } 
+            } },
             { 
                 $group: { 
                     _id: { $dateToString: { format: "%Y-%m-%d", date: "$timestamp" } }, 
@@ -126,7 +128,9 @@ router.get('/api/users', auth, superAdmin, async (req, res) => {
 
         const statsMap = {};
         urlStats.forEach(stat => {
-            statsMap[stat._id.toString()] = stat;
+            if (stat._id) {
+                statsMap[stat._id.toString()] = stat;
+            }
         });
 
         const userList = users.map(u => ({
