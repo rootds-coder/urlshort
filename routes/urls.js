@@ -31,7 +31,8 @@ router.post('/shorten', auth, async (req, res) => {
         if (!validUrl.isUri(fullUrl)) return res.status(400).json({ error: 'Invalid URL format' });
 
         // Enforce Premium limitations
-        if (!req.user.isPremium) {
+        const activelyPremium = req.user.isPremium || (req.user.premiumExpiresAt && req.user.premiumExpiresAt > new Date());
+        if (!activelyPremium) {
             const linkCount = await UrlModel.countDocuments({ user: req.user._id });
             if (linkCount >= 10) {
                 return res.status(403).json({ error: 'PREMIUM_REQUIRED', message: 'You have reached the free tier limit of 10 links.' });

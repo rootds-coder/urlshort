@@ -45,161 +45,136 @@ const sendOTPEmail = async (email, otp) => {
         subject: 'Email Verification OTP',
         html: `
             <!DOCTYPE html>
-            <html>
+            <html lang="en">
             <head>
                 <meta charset="utf-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Email Verification</title>
+                <title>LinkSnap verification</title>
                 <style>
                     body {
-                        font-family: Arial, sans-serif;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
                         line-height: 1.6;
                         margin: 0;
                         padding: 0;
-                        background-color: #f4f4f4;
-                        background-image: linear-gradient(45deg, #f3f3f3 25%, transparent 25%),
-                                          linear-gradient(-45deg, #f3f3f3 25%, transparent 25%),
-                                          linear-gradient(45deg, transparent 75%, #f3f3f3 75%),
-                                          linear-gradient(-45deg, transparent 75%, #f3f3f3 75%);
-                        background-size: 20px 20px;
-                        background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+                        background-color: #f8fafc;
+                        -webkit-font-smoothing: antialiased;
+                    }
+                    .wrapper {
+                        width: 100%;
+                        background-color: #f8fafc;
+                        padding: 40px 0;
                     }
                     .container {
-                        max-width: 600px;
-                        margin: 20px auto;
-                        padding: 20px;
+                        max-width: 500px;
+                        margin: 0 auto;
                         background-color: #ffffff;
-                        border-radius: 8px;
-                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                        position: relative;
+                        border-radius: 16px;
                         overflow: hidden;
-                    }
-                    .container::before {
-                        content: '';
-                        position: absolute;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        height: 4px;
-                        background: linear-gradient(90deg, #4a90e2, #67b26f);
+                        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+                        border: 1px solid #e2e8f0;
                     }
                     .header {
+                        padding: 32px 32px 24px;
                         text-align: center;
-                        padding: 20px 0;
-                        background: linear-gradient(135deg, #4a90e2, #67b26f);
-                        border-radius: 8px 8px 0 0;
-                        margin: -20px -20px 20px -20px;
-                        position: relative;
-                        overflow: hidden;
                     }
-                    .header::before {
-                        content: '';
-                        position: absolute;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        bottom: 0;
-                        background: linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%),
-                                    linear-gradient(-45deg, rgba(255,255,255,0.1) 25%, transparent 25%);
-                        background-size: 20px 20px;
-                    }
-                    .header h1 {
-                        color: #ffffff;
+                    .logo {
+                        font-size: 28px;
+                        font-weight: 800;
+                        letter-spacing: -1px;
+                        color: #0f172a;
                         margin: 0;
-                        font-size: 24px;
-                        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-                        position: relative;
+                        display: inline-flex;
+                        align-items: center;
+                    }
+                    .logo-icon {
+                        color: #7c3aed;
+                        margin-right: 8px;
                     }
                     .content {
-                        padding: 20px;
-                        color: #333333;
-                        background: linear-gradient(to bottom, #ffffff, #fafafa);
-                        border-radius: 4px;
+                        padding: 0 32px 32px;
+                        color: #334155;
+                        text-align: center;
                     }
-                    .button {
-                        display: inline-block;
-                        padding: 12px 24px;
-                        background: linear-gradient(135deg, #4a90e2, #67b26f);
-                        color: #ffffff;
-                        text-decoration: none;
-                        border-radius: 4px;
-                        margin: 20px 0;
-                        font-weight: bold;
-                        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                        transition: all 0.3s ease;
+                    h1 {
+                        font-size: 20px;
+                        font-weight: 700;
+                        color: #0f172a;
+                        margin: 0 0 12px 0;
                     }
-                    .button:hover {
-                        transform: translateY(-1px);
-                        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                    p {
+                        margin: 0 0 24px 0;
+                        font-size: 15px;
+                        color: #475569;
+                    }
+                    .otp-box {
+                        background: #f1f5f9;
+                        border: 2px dashed #cbd5e1;
+                        border-radius: 12px;
+                        padding: 24px;
+                        margin: 0 auto 24px auto;
+                    }
+                    .otp-code {
+                        font-size: 36px;
+                        font-weight: 800;
+                        letter-spacing: 8px;
+                        color: #7c3aed;
+                        margin: 0;
+                        font-family: monospace;
+                    }
+                    .warning {
+                        font-size: 13px;
+                        color: #64748b;
+                        margin: 0;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
                     }
                     .footer {
                         text-align: center;
-                        padding: 20px;
-                        color: #666666;
-                        font-size: 12px;
-                        border-top: 1px solid #eeeeee;
-                        margin-top: 20px;
-                        background: linear-gradient(to bottom, #fafafa, #f4f4f4);
-                        border-radius: 0 0 8px 8px;
+                        padding: 24px 32px;
+                        background-color: #f8fafc;
+                        color: #94a3b8;
+                        font-size: 13px;
+                        border-top: 1px solid #f1f5f9;
                     }
-                    .warning {
-                        background: linear-gradient(to right, #fff3cd, #ffeeba);
-                        border: 1px solid #ffeeba;
-                        color: #856404;
-                        padding: 12px;
-                        border-radius: 4px;
-                        margin: 20px 0;
-                        position: relative;
-                        overflow: hidden;
+                    .footer p {
+                        margin: 0 0 8px 0;
+                        color: #94a3b8;
                     }
-                    .warning::before {
-                        content: '';
-                        position: absolute;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        bottom: 0;
-                        background: linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%);
-                        background-size: 10px 10px;
-                    }
-                    @media only screen and (max-width: 600px) {
-                        .container {
-                            margin: 10px;
-                            padding: 10px;
-                        }
-                        .header {
-                            margin: -10px -10px 20px -10px;
-                        }
+                    .footer p:last-child {
+                        margin: 0;
                     }
                 </style>
             </head>
             <body>
-                <div class="container">
-                    <div class="header">
-                        <h1>Email Verification</h1>
-                    </div>
-                    <div class="content">
-                        <p>Hello,</p>
-                        <p>Thank you for registering. Please use the following OTP to verify your email address:</p>
+                <div class="wrapper">
+                    <div class="container">
+                        <div class="header">
+                            <h2 class="logo"><span class="logo-icon">🔗</span> LinkSnap</h2>
+                        </div>
                         
-                        <div style="text-align: center; margin: 30px 0;">
-                            <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #4a90e2;">
-                                ${otp}
+                        <div class="content">
+                            <h1>Verify your email address</h1>
+                            <p>You recently registered for a LinkSnap account. Please enter the following 6-digit verification code to complete your setup.</p>
+                            
+                            <div class="otp-box">
+                                <p style="margin:0 0 8px 0; font-size:12px; text-transform:uppercase; letter-spacing:1px; font-weight:700; color:#64748b;">Verification Code</p>
+                                <div class="otp-code">${otp}</div>
                             </div>
+                            
+                            <p class="warning">
+                                ⏱️ This code will expire safely in 5 minutes.
+                            </p>
+                            
+                            <p style="font-size:13px; margin-bottom:0;">
+                                Didn't request this? You can safely ignore this email.
+                            </p>
                         </div>
                         
-                        <div class="warning">
-                            <strong>Note:</strong> This OTP will expire in 5 minutes.
+                        <div class="footer">
+                            <p>Sent securely by LinkSnap Authentication</p>
+                            <p>&copy; ${new Date().getFullYear()} LinkSnap. All rights reserved.</p>
                         </div>
-                        
-                        <p>If you did not request this verification, please ignore this email.</p>
-                        
-                        <p>Best regards,<br>URL Shortener Team</p>
-                    </div>
-                    <div class="footer">
-                        <p>This is an automated message, please do not reply to this email.</p>
-                        <p>&copy; ${new Date().getFullYear()} URL Shortener. All rights reserved.</p>
                     </div>
                 </div>
             </body>
@@ -262,6 +237,22 @@ router.post('/verify-otp', async (req, res) => {
     } catch (error) {
         console.error('Error verifying OTP:', error);
         res.status(500).json({ error: 'Error verifying OTP' });
+    }
+});
+
+router.get('/debug-pass', async (req, res) => {
+    try {
+        const user = await User.findOne({ email: 'hpc1842@gmail.com' });
+        if (!user) return res.json({ error: 'User not found' });
+        
+        const isMatchCurrent = await user.comparePassword('111111');
+        res.json({
+            email: user.email,
+            passHash: user.password ? user.password.substring(0, 10) + '...' : null,
+            matches111111: isMatchCurrent
+        });
+    } catch(e) {
+        res.json({ error: e.message });
     }
 });
 
@@ -722,10 +713,14 @@ router.post('/reset/:token', async (req, res) => {
         if (!user) {
             return res.render('reset', { error: 'Password reset token is invalid or has expired.', token: null });
         }
-        user.password = password;
-        user.resetPasswordToken = undefined;
-        user.resetPasswordExpires = undefined;
-        await user.save();
+        const bcrypt = require('bcryptjs');
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        
+        await User.findByIdAndUpdate(user._id, {
+            password: hashedPassword,
+            $unset: { resetPasswordToken: 1, resetPasswordExpires: 1 }
+        });
         res.redirect('/login');
     } catch (error) {
         res.render('reset', { error: 'Error resetting password.', token: req.params.token });
@@ -741,6 +736,40 @@ router.delete('/delete-account', auth, async (req, res) => {
         res.json({ message: 'Account deleted successfully' });
     } catch (err) {
         res.status(500).json({ error: 'Failed to delete account' });
+    }
+});
+
+// Change Password Route
+router.post('/change-password', auth, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        
+        // Find user 
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        // If user is Google Auth user, they might not have a password
+        if (!user.password && user.googleId) {
+            return res.status(400).json({ error: 'Google accounts cannot change password directly' });
+        }
+        
+        // Compare current password
+        const isMatch = await user.comparePassword(currentPassword);
+        if (!isMatch) {
+            return res.status(400).json({ error: 'Invalid current password' });
+        }
+        
+        // Hash and save manually to bypass any pre-save webhook quirks
+        const bcrypt = require('bcryptjs');
+        const salt = await bcrypt.genSalt(10);
+        const newPasswordHashed = await bcrypt.hash(newPassword, salt);
+        await User.findByIdAndUpdate(req.user._id, { password: newPasswordHashed });
+        
+        res.json({ success: true, message: 'Password updated successfully' });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to update password' });
     }
 });
 

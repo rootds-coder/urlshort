@@ -122,19 +122,42 @@
         .theme-toggle:hover { background: rgba(124,58,237,.15); color: var(--primary-l); }
         .theme-toggle .icon { font-size: 1.1rem; width: 20px; text-align: center; }
 
+        .mobile-menu-btn { display: none; background: none; border: none; color: var(--text); font-size: 1.5rem; cursor: pointer; margin-right: 0.75rem; transition: color 0.2s; }
+        .mobile-menu-btn:hover { color: var(--primary-l); }
+        .sidebar-overlay { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 150; 
+            backdrop-filter: blur(4px); opacity: 0; pointer-events: none; transition: opacity 0.3s ease; 
+        }
+        .sidebar-overlay.active { opacity: 1; pointer-events: all; }
+
         @media (max-width: 768px) {
-            .sidebar { display: none; }
+            .sidebar { 
+                position: fixed; top: 0; left: 0; height: 100vh; z-index: 200; 
+                transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            }
+            .sidebar.mobile-open { transform: translateX(0); box-shadow: 2px 0 20px rgba(0,0,0,0.5); }
+            .mobile-menu-btn { display: block; }
+            .content { padding: 1.25rem; }
+            .topbar { padding: 1rem; }
             .chart-wrap { height: 200px; }
         }
     </style>
 </head>
 <body>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
     <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="sidebar-logo"><div class="logo-text">⚡ LinkSnap</div></div>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div class="logo-text">⚡ LinkSnap</div>
+                <button class="mobile-menu-btn" onclick="toggleSidebar()" style="margin:0; font-size:1.2rem">&times;</button>
+            </div>
+        </div>
         <nav class="sidebar-nav">
             <button class="nav-item active" onclick="showPanel('overview')"><span class="icon">🌍</span> System Overview</button>
             <button class="nav-item" onclick="showPanel('users')"><span class="icon">👥</span> User Management</button>
+            <button class="nav-item" onclick="showPanel('payments')"><span class="icon">💳</span> Payment Requests</button>
             <a href="/dashboard" class="nav-item" style="margin-top:2rem"><span class="icon">←</span> Back to App</a>
             <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" style="margin-top:auto">
                 <span class="icon" id="themeIcon">🌙</span> <span id="themeLabel">Dark Mode</span>
@@ -146,7 +169,10 @@
     <!-- Main Content -->
     <main class="main">
         <div class="topbar">
-            <h1 id="panel-title">System Overview</h1>
+            <div style="display: flex; align-items: center;">
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                <h1 id="panel-title">System Overview</h1>
+            </div>
             <div style="display:flex; gap: 10px;">
                 <span style="background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;padding:.3rem .8rem;border-radius:20px;font-size:.8rem;font-weight:700;">ADMIN</span>
             </div>
@@ -202,6 +228,27 @@
                     </table>
                 </div>
             </div>
+
+            <!-- ── PAYMENTS PANEL ── -->
+            <div class="panel" id="panel-payments">
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>User</th>
+                                <th>Plan & Amount</th>
+                                <th>UTR Number</th>
+                                <th>Status</th>
+                                <th style="text-align:right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentTableBody">
+                            <tr><td colspan="5"><div class="spinner-center"></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -225,12 +272,12 @@
                 icon.textContent = '🌙';
                 label.textContent = 'Dark Mode';
             }
-            if(window.trafficChart) {
+            if(window.myChartInstance && window.myChartInstance.options) {
                 // Adjust chart grid color on theme change
                 const isLight = theme === 'light';
-                window.trafficChart.options.scales.x.grid.color = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
-                window.trafficChart.options.scales.y.grid.color = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
-                window.trafficChart.update();
+                window.myChartInstance.options.scales.x.grid.color = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+                window.myChartInstance.options.scales.y.grid.color = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+                window.myChartInstance.update();
             }
         }
         function toggleTheme() {
@@ -248,11 +295,14 @@
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById('panel-' + name).classList.add('active');
             document.querySelector(`[onclick="showPanel('${name}')"]`)?.classList.add('active');
-            const titles = { overview: 'System Overview', users: 'User Management' };
+            const titles = { overview: 'System Overview', users: 'User Management', payments: 'Payment Requests' };
             document.getElementById('panel-title').textContent = titles[name] || name;
             
             if(name === 'users' && !window.usersLoaded) {
                 fetchUsers();
+            }
+            if(name === 'payments' && !window.paymentsLoaded) {
+                fetchPayments();
             }
         }
 
@@ -283,7 +333,7 @@
                 const isLight = document.documentElement.getAttribute('data-theme') === 'light';
                 const gridColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
                 
-                window.trafficChart = new Chart(ctx, {
+                window.myChartInstance = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: data.dailyClicks.map(x => x.date),
@@ -345,7 +395,8 @@
                 
                 window.usersLoaded = true;
             } catch(e) {
-                document.getElementById('userTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:red">Failed to load users.</td></tr>';
+                console.error("fetchUsers error:", e);
+                document.getElementById('userTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:red">Failed to load users. See browser console.</td></tr>';
             }
         }
 
@@ -377,7 +428,7 @@
                 const data = await res.json();
                 if (res.ok) {
                     toast(data.message, '⭐');
-                    loadUsers(); // refresh the table
+                    fetchUsers(); // refresh the table
                 } else {
                     toast(data.error || 'Failed to update user', '❌');
                 }
@@ -386,8 +437,78 @@
             }
         }
 
+        // ── Fetch Payments ────────────────────────────────────────
+        async function fetchPayments() {
+            try {
+                const res = await fetch('/superadmin/api/payments');
+                const data = await res.json();
+                const tbody = document.getElementById('paymentTableBody');
+                
+                if (data.payments.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:#64748b">No payment requests found.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.payments.map(p => {
+                    const date = new Date(p.createdAt).toLocaleDateString();
+                    const statusColor = p.status === 'approved' ? 'var(--success)' : (p.status === 'rejected' ? 'var(--danger)' : 'var(--warn)');
+                    return `
+                        <tr id="paymentrow-${p._id}">
+                            <td>${date}</td>
+                            <td>
+                                <strong>${p.user ? p.user.username : 'Unknown'}</strong><br>
+                                <span style="font-size:0.8rem;color:var(--muted)">${p.user ? p.user.email : ''}</span>
+                            </td>
+                            <td>
+                                <span class="badge" style="background:#3b82f6;color:#fff">${p.planId ? p.planId.toUpperCase() : 'ELITE'}</span><br>
+                                <strong style="color:var(--success)">₹${p.amount || 99}</strong>
+                            </td>
+                            <td style="font-family:monospace;letter-spacing:1px">${p.utr}</td>
+                            <td><span class="badge" style="background:rgba(255,255,255,0.05);color:${statusColor};border:1px solid ${statusColor}">${p.status.toUpperCase()}</span></td>
+                            <td style="text-align:right; display:flex; justify-content:flex-end; gap:0.5rem">
+                                ${p.status === 'pending' ? `
+                                <button class="btn btn-sm" style="background:var(--success);color:#fff" onclick="updatePayment('${p._id}', 'approve')">Approve</button>
+                                <button class="btn btn-danger btn-sm" onclick="updatePayment('${p._id}', 'reject')">Reject</button>
+                                ` : `<span style="color:var(--muted);font-size:0.8rem">Processed</span>`}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                window.paymentsLoaded = true;
+            } catch(e) {
+                document.getElementById('paymentTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center;color:red">Failed to load payments.</td></tr>';
+            }
+        }
+
+        // ── Update Payment Status ─────────────────────────────────
+        async function updatePayment(id, action) {
+            if (!confirm(`Are you sure you want to ${action} this payment?`)) return;
+            
+            try {
+                const res = await fetch(`/superadmin/api/payments/${id}/${action}`, { method: 'PATCH' });
+                const data = await res.json();
+                if (res.ok) {
+                    toast(data.message, '✅');
+                    fetchPayments(); // refresh the table
+                    if(action === 'approve') window.usersLoaded = false; // invalidate users cache
+                } else {
+                    toast(data.error || `Failed to ${action} payment`, '❌');
+                }
+            } catch(e) {
+                toast('Network error while updating payment', '❌');
+            }
+        }
+
         // Initialize
         loadStats();
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('mobile-open');
+            overlay.classList.toggle('active');
+        }
     </script>
 </body>
 </html>

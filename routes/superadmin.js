@@ -5,10 +5,10 @@ const superAdmin = require('../middleware/superAdmin');
 const User = require('../models/User');
 const UrlModel = require('../models/URL');
 const Click = require('../models/Click');
-
+const Payment = require('../models/Payment');
 // ── Dashboard View ──────────────────────────────────────────────────────────
 router.get('/dashboard', auth, superAdmin, async (req, res) => {
-    res.render('superadmin', { 
+    res.render('superadmin', {
         user: req.user,
         baseUrl: req.protocol + '://' + req.get('host')
     });
@@ -18,7 +18,7 @@ router.get('/dashboard', auth, superAdmin, async (req, res) => {
 router.delete('/api/users/:id', auth, superAdmin, async (req, res) => {
     try {
         const userId = req.params.id;
-        
+
         if (userId === req.user._id.toString()) {
             return res.status(400).json({ error: 'You cannot delete yourself.' });
         }
@@ -29,7 +29,7 @@ router.delete('/api/users/:id', auth, superAdmin, async (req, res) => {
 
         // Delete all clicks associated with those URLs
         await Click.deleteMany({ url: { $in: urlIds } });
-        
+
         // Delete all URLs and then the User
         await UrlModel.deleteMany({ user: userId });
         await User.findByIdAndDelete(userId);
@@ -45,7 +45,7 @@ router.delete('/api/users/:id', auth, superAdmin, async (req, res) => {
 router.patch('/api/users/:id/premium', auth, superAdmin, async (req, res) => {
     try {
         const userId = req.params.id;
-        
+
         if (userId === req.user._id.toString()) {
             return res.status(400).json({ error: 'You cannot alter your own premium status.' });
         }
@@ -69,7 +69,7 @@ router.get('/api/stats', auth, superAdmin, async (req, res) => {
         const totalUsers = await User.countDocuments();
         const totalLinks = await UrlModel.countDocuments();
         const totalClicks = await Click.countDocuments();
-        
+
         // Links created today
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
@@ -78,16 +78,18 @@ router.get('/api/stats', auth, superAdmin, async (req, res) => {
         // Clicks over time (last 30 days)
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        
+
         const recentClicks = await Click.aggregate([
-            { $match: { 
-                timestamp: { $exists: true, $ne: null, $gte: thirtyDaysAgo } 
-            } },
-            { 
-                $group: { 
-                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$timestamp" } }, 
-                    count: { $sum: 1 } 
-                } 
+            {
+                $match: {
+                    timestamp: { $exists: true, $ne: null, $gte: thirtyDaysAgo }
+                }
+            },
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$timestamp" } },
+                    count: { $sum: 1 }
+                }
             },
             { $sort: { _id: 1 } }
         ]);
@@ -110,44 +112,100 @@ router.get('/api/stats', auth, superAdmin, async (req, res) => {
 // ── Users List API ──────────────────────────────────────────────────────────
 router.get('/api/users', auth, superAdmin, async (req, res) => {
     try {
-        const users = await User.find({}, '-password').sort({ createdAt: -1 });
-        
-        // We need link counts and total clicks per user.
-        // We'll map them manually or use aggregation.
-        // For simplicity, let's aggregate URL count and total clicks per user.
-
-        const urlStats = await UrlModel.aggregate([
-            { 
-                $group: { 
-                    _id: '$user', 
-                    linkCount: { $sum: 1 },
-                    clickCount: { $sum: '$clicks' }
-                } 
-            }
+        const users = await User.aggregate([
+            {
+                $lookup: {
+                    from: 'urls', // mongoose URL model collection name
+                    localField: '_id',
+                    foreignField: 'user',
+                    as: 'urls'
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    username: 1,
+                    email: 1,
+                    isAdmin: 1,
+                    isPremium: 1,
+                    premiumExpiresAt: 1,
+                    createdAt: 1,
+                    linkCount: { $size: "$urls" },
+                    clickCount: { $sum: "$urls.clicks" }
+                }
+            },
+            { $sort: { createdAt: -1 } }
         ]);
 
-        const statsMap = {};
-        urlStats.forEach(stat => {
-            if (stat._id) {
-                statsMap[stat._id.toString()] = stat;
-            }
-        });
-
-        const userList = users.map(u => ({
-            _id: u._id,
-            username: u.username,
-            email: u.email,
-            isAdmin: u.isAdmin,
-            isPremium: u.isPremium,
-            createdAt: u.createdAt,
-            linkCount: statsMap[u._id.toString()]?.linkCount || 0,
-            clickCount: statsMap[u._id.toString()]?.clickCount || 0
-        }));
-
-        res.json({ users: userList });
+        res.json({ users });
     } catch (error) {
         console.error('Error fetching users:', error);
         res.status(500).json({ error: 'Failed to fetch user list.' });
+    }
+});
+
+// ── Payments API ────────────────────────────────────────────────────────────
+router.get('/api/payments', auth, superAdmin, async (req, res) => {
+    try {
+        const payments = await Payment.find()
+            .populate('user', 'username email')
+            .sort({ createdAt: -1 });
+        res.json({ payments });
+    } catch (error) {
+        console.error('Error fetching payments:', error);
+        res.status(500).json({ error: 'Failed to fetch payments.' });
+    }
+});
+
+router.patch('/api/payments/:id/approve', auth, superAdmin, async (req, res) => {
+    try {
+        const payment = await Payment.findById(req.params.id);
+        if (!payment) return res.status(404).json({ error: 'Payment not found.' });
+        if (payment.status !== 'pending') return res.status(400).json({ error: 'Payment is already processed.' });
+
+        payment.status = 'approved';
+        await payment.save();
+
+        // Calculate new expiration date
+        const user = await User.findById(payment.user);
+        if (user) {
+            let newExpiry = user.premiumExpiresAt && user.premiumExpiresAt > new Date()
+                ? new Date(user.premiumExpiresAt)
+                : new Date();
+
+            if (payment.planId === 'trial') {
+                newExpiry.setDate(newExpiry.getDate() + 2);
+            } else if (payment.planId === 'pro') {
+                newExpiry.setDate(newExpiry.getDate() + 15);
+            } else {
+                newExpiry.setDate(newExpiry.getDate() + 30);
+            }
+
+            user.isPremium = true;
+            user.premiumExpiresAt = newExpiry;
+            await user.save();
+        }
+
+        res.json({ message: 'Payment approved and user upgraded to premium.' });
+    } catch (error) {
+        console.error('Error approving payment:', error);
+        res.status(500).json({ error: 'Failed to approve payment.' });
+    }
+});
+
+router.patch('/api/payments/:id/reject', auth, superAdmin, async (req, res) => {
+    try {
+        const payment = await Payment.findById(req.params.id);
+        if (!payment) return res.status(404).json({ error: 'Payment not found.' });
+        if (payment.status !== 'pending') return res.status(400).json({ error: 'Payment is already processed.' });
+
+        payment.status = 'rejected';
+        await payment.save();
+
+        res.json({ message: 'Payment rejected.' });
+    } catch (error) {
+        console.error('Error rejecting payment:', error);
+        res.status(500).json({ error: 'Failed to reject payment.' });
     }
 });
 

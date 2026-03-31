@@ -109,6 +109,7 @@ app.use('/urls', require('./routes/urls'));
 app.use('/api/urls', require('./routes/urls'));
 app.use('/auth', require('./routes/auth'));
 app.use('/superadmin', require('./routes/superadmin'));
+app.use('/api/payments', require('./routes/payment'));
 
 // Home → landing page (unauthenticated) or redirect to dashboard
 app.get('/', (req, res) => {

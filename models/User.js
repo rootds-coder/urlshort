@@ -50,6 +50,10 @@ const userSchema = new mongoose.Schema({
     isPremium: {
         type: Boolean,
         default: false
+    },
+    premiumExpiresAt: {
+        type: Date,
+        default: null
     }
 });
 

@@ -282,11 +282,26 @@
         .theme-toggle:hover { background: rgba(124,58,237,.15); color: var(--primary-l); }
         .theme-toggle .icon { font-size: 1.1rem; width: 20px; text-align: center; }
 
+        .mobile-menu-btn { display: none; background: none; border: none; color: var(--text); font-size: 1.5rem; cursor: pointer; margin-right: 0.75rem; transition: color 0.2s; }
+        .mobile-menu-btn:hover { color: var(--primary-l); }
+        .sidebar-overlay { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 150; 
+            backdrop-filter: blur(4px); opacity: 0; pointer-events: none; transition: opacity 0.3s ease; 
+        }
+        .sidebar-overlay.active { opacity: 1; pointer-events: all; }
+
         @media (max-width: 768px) {
-            .sidebar { display: none; }
+            .sidebar { 
+                position: fixed; top: 0; left: 0; height: 100vh; z-index: 200; 
+                transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            }
+            .sidebar.mobile-open { transform: translateX(0); box-shadow: 2px 0 20px rgba(0,0,0,0.5); }
+            .mobile-menu-btn { display: block; }
             .form-row { grid-template-columns: 1fr; }
             .url-card { flex-direction: column; align-items: flex-start; }
-            .url-clicks { border: none; padding: 0; }
+            .url-clicks { border: none; padding: 0; margin-top: 0.5rem; }
+            .topbar { padding: 1rem; }
+            .content { padding: 1.25rem; }
         }
 
         /* Particle Holders */
@@ -297,10 +312,16 @@
 <body>
     <div id="particles-js"></div>
     <div id="snow-particles"></div>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="sidebar-logo"><div class="logo-text">⚡ LinkSnap</div></div>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div class="logo-text">⚡ LinkSnap</div>
+                <button class="mobile-menu-btn" onclick="toggleSidebar()" style="margin:0; font-size:1.2rem">&times;</button>
+            </div>
+        </div>
         <nav class="sidebar-nav">
             <button class="nav-item active" onclick="showPanel('links')"><span class="icon">🔗</span> My Links</button>
             <button class="nav-item" onclick="showPanel('analytics')"><span class="icon">📊</span> Analytics</button>
@@ -328,7 +349,10 @@
     <!-- Main Content -->
     <main class="main">
         <div class="topbar">
-            <h1 id="panel-title">My Links</h1>
+            <div style="display: flex; align-items: center;">
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                <h1 id="panel-title">My Links</h1>
+            </div>
             <div class="topbar-actions">
                 <button class="btn btn-danger btn-sm" id="deleteAllBtn" onclick="deleteAll()">🗑 Delete All</button>
                 <a href="/auth/logout" class="btn btn-ghost btn-sm">Logout</a>
@@ -446,15 +470,15 @@
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-label">Total Links</div>
-                        <div class="stat-value gradient-text"><%=urls.length%></div>
+                        <div class="stat-value gradient-text" id="analyticsTotalLinks"><%=urls.length%></div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Total Clicks</div>
-                        <div class="stat-value gradient-text"><%= urls.reduce((a,u)=>a+u.clicks,0) %></div>
+                        <div class="stat-value gradient-text" id="analyticsTotalClicks"><%= urls.reduce((a,u)=>a+u.clicks,0) %></div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Top Link</div>
-                        <div class="stat-value gradient-text" style="font-size:1rem">
+                        <div class="stat-value gradient-text" id="analyticsTopLink" style="font-size:1rem">
                             <% const top = urls.sort((a,b)=>b.clicks-a.clicks)[0]; %>
                             <%=top ? '/'+top.shortUrl : 'N/A'%>
                         </div>
@@ -513,25 +537,100 @@ Body:    { "fullUrl": "https://example.com",
         </div>
     </div>
 
-    <!-- Premium Modal -->
+    <!-- Premium Modal (Razorpay Style) -->
     <div class="modal-overlay" id="premiumModal">
-        <div class="modal">
-            <button class="modal-close" onclick="closePremiumModal()">✕</button>
-            <div style="text-align:center; margin-bottom:1.5rem">
-                <span style="font-size:3rem">⭐</span>
-                <h2 style="font-size:1.5rem;font-weight:700;color:var(--text);margin-top:.5rem">Get Premium</h2>
-                <p style="color:var(--subtext);font-size:.9rem;margin-top:.5rem">Unlock unlimited links, custom 30-day expiries, and advanced analytics tracking.</p>
+        <div class="modal shadow-2xl" id="razorpayModal" style="max-width:400px; padding:0; overflow:hidden; border-radius:12px; border:1px solid var(--border); background:var(--bg)">
+            <!-- Header -->
+            <div style="background:var(--overlay); padding:1rem 1.5rem; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border)">
+                <div style="display:flex; align-items:center; gap:.5rem">
+                    <span style="font-size:1.5rem">⚡</span>
+                    <strong style="font-size:1.1rem; color:var(--text)">Upgrade Plan</strong>
+                </div>
+                <button class="modal-close" style="position:static; padding:.5rem; background:transparent" onclick="closePremiumModal()">✕</button>
             </div>
             
-            <div style="background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:1.5rem;text-align:center;margin-bottom:1.5rem;">
-                <p style="font-weight:600;color:var(--text);margin-bottom:.5rem">Pay via UPI</p>
-                <div style="background:rgba(125,42,232,0.1); border-radius:8px; padding:10px; font-size:1.3rem;font-weight:800;letter-spacing:1px;color:var(--primary);user-select:all;"><%= upiId %></div>
-                <p style="color:var(--subtext);font-size:.8rem;margin-top:1rem;">Send exactly ₹99 to activate Premium forever.<br>Then <b>Msg Dhruv with Screenshot</b>.</p>
-            </div>
+            <div style="padding:1.5rem; max-height:80vh; overflow-y:auto">
+                <!-- Subscription Selection -->
+                <p style="font-weight:600; color:var(--subtext); margin-bottom:.8rem; font-size:.9rem">Select Subscription</p>
+                <div style="display:flex; flex-direction:column; gap:.8rem; margin-bottom:1.5rem" id="planSelection">
+                    <label class="plan-card" style="display:flex; justify-content:space-between; align-items:center; border:2px solid transparent; border-radius:8px; padding:1rem; background:var(--input-bg); cursor:pointer; transition:.2s">
+                        <input type="radio" name="planId" value="trial" onclick="selectPlan('trial', 9)" style="display:none">
+                        <div>
+                            <span style="font-size:.8rem; color:var(--subtext); text-transform:uppercase; letter-spacing:1px; font-weight:700">Trial</span><br>
+                            <span style="font-size:1rem; font-weight:600; color:var(--text)">2 Days</span>
+                        </div>
+                        <strong style="font-size:1.2rem; color:var(--text)">₹9</strong>
+                    </label>
+                    
+                    <label class="plan-card" style="display:flex; justify-content:space-between; align-items:center; border:2px solid transparent; border-radius:8px; padding:1rem; background:var(--input-bg); cursor:pointer; transition:.2s">
+                        <input type="radio" name="planId" value="pro" onclick="selectPlan('pro', 49)" style="display:none">
+                        <div>
+                            <span style="font-size:.8rem; color:var(--subtext); text-transform:uppercase; letter-spacing:1px; font-weight:700">Pro</span><br>
+                            <span style="font-size:1rem; font-weight:600; color:var(--text)">15 Days</span>
+                        </div>
+                        <strong style="font-size:1.2rem; color:var(--text)">₹49</strong>
+                    </label>
+                    
+                    <label class="plan-card selected" style="position:relative; display:flex; justify-content:space-between; align-items:center; border:2px solid var(--primary); border-radius:8px; padding:1rem; background:rgba(124,58,237,.05); cursor:pointer; transition:.2s">
+                        <div style="position:absolute; top:-10px; right:10px; background:var(--primary); color:#fff; font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:10px">RECOMMENDED</div>
+                        <input type="radio" name="planId" value="elite" onclick="selectPlan('elite', 99)" checked style="display:none">
+                        <div>
+                            <span style="font-size:.8rem; color:var(--subtext); text-transform:uppercase; letter-spacing:1px; font-weight:700">Elite</span><br>
+                            <span style="font-size:1rem; font-weight:600; color:var(--text)">30 Days</span>
+                        </div>
+                        <strong style="font-size:1.2rem; color:var(--text)">₹99</strong>
+                    </label>
+                </div>
 
-            <button class="btn btn-primary" style="width:100%" onclick="closePremiumModal();toast('Thanks! Your upgrade will be processed as soon as possible.','⭐')">I Have Sent the Payment</button>
+                <!-- UPI Apps Deep Links -->
+                <p style="font-weight:600; color:var(--subtext); margin-bottom:.8rem; font-size:.9rem">Pay via UPI App</p>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:.8rem; margin-bottom:1.5rem">
+                    <button class="btn" style="background:var(--input-bg); color:var(--text); border:1px solid var(--border); font-weight:600; display:flex; justify-content:center; align-items:center; gap:.5rem" onclick="payVia('gpay')">
+                        GPay
+                    </button>
+                    <button class="btn" style="background:var(--input-bg); color:var(--text); border:1px solid var(--border); font-weight:600; display:flex; justify-content:center; align-items:center; gap:.5rem" onclick="payVia('phonepe')">
+                        PhonePe
+                    </button>
+                    <button class="btn" style="grid-column: span 2; background:var(--input-bg); color:var(--text); border:1px solid var(--border); font-weight:600; display:flex; justify-content:center; gap:.5rem" onclick="payVia('bhim')">
+                        Other UPI Apps
+                    </button>
+                </div>
+
+                <div style="text-align:center; position:relative; margin: 1.5rem 0">
+                    <div style="position:absolute; top:50%; left:0; right:0; height:1px; background:var(--border)"></div>
+                    <span style="position:relative; background:var(--bg); padding:0 1rem; color:var(--subtext); font-size:.8rem; font-weight:600">OR</span>
+                </div>
+
+                <!-- QR Code Toggle -->
+                <div style="text-align:center; margin-bottom:1.5rem">
+                    <button class="btn btn-ghost btn-sm" style="color:var(--primary); font-weight:600" onclick="toggleQR()">Scan QR Code Instead</button>
+                    <div id="qrContainer" style="display:none; margin-top:1rem; border:1px solid var(--border); padding:1rem; border-radius:8px; background:var(--input-bg)">
+                        <img id="dynamicPaymentQR" src="" style="width:160px; height:160px; margin:0 auto; display:block; border-radius:8px; border:4px solid #fff">
+                        <p style="font-size:.8rem; color:var(--subtext); margin-top:.8rem">Scan using any UPI App</p>
+                    </div>
+                </div>
+
+                <!-- UTR Verification -->
+                <div style="background:var(--input-bg); padding:1rem; border-radius:8px; border:1px solid var(--border)">
+                    <p style="font-weight:600; font-size:.9rem; color:var(--text); margin-bottom:.5rem">I Have Paid</p>
+                    <div style="display:flex; gap:.5rem">
+                        <input type="text" id="utrInput" placeholder="Enter 12-digit UTR No." style="flex:1; border:1px solid var(--border); background:var(--bg); color:var(--text); padding:.6rem 1rem; border-radius:6px; outline:none; font-family:monospace">
+                    </div>
+                    <button id="submitUtrBtn" class="btn btn-primary" style="width:100%; margin-top:.8rem; padding:.8rem" onclick="submitPayment()">Submit for Verification</button>
+                </div>
+
+                <!-- Footer Note -->
+                <div style="text-align:center; margin-top:1.5rem; display:flex; align-items:center; justify-content:center; gap:.4rem; color:var(--subtext); font-size:.75rem">
+                    <span>🔒</span> Secured via UPI 256-bit encryption
+                </div>
+            </div>
         </div>
     </div>
+    
+    <style>
+        .plan-card:hover { border-color: rgba(124,58,237,.5) !important; }
+        .plan-card.selected { border-color: var(--primary) !important; background: rgba(124,58,237,.05) !important; }
+    </style>
 
     <!-- Toast -->
     <div class="toast" id="toast">
@@ -797,15 +896,35 @@ Body:    { "fullUrl": "https://example.com",
             const cards = document.querySelectorAll('.url-card');
             let totalClicks = 0;
             const cats = new Set();
-            let active = 0;
+            let topLink = null;
+            let topClicks = -1;
+
             cards.forEach(c => {
                 const clicks = parseInt(c.querySelector('.clicks-num')?.textContent || 0);
                 totalClicks += clicks;
                 if (c.dataset.cat) cats.add(c.dataset.cat);
+                
+                if (clicks > topClicks) {
+                    topClicks = clicks;
+                    topLink = '/' + c.dataset.short;
+                }
             });
-            document.getElementById('statLinks').textContent = cards.length;
-            document.getElementById('statClicks').textContent = totalClicks;
-            document.getElementById('statCats').textContent = cats.size;
+
+            // Update main dashboard stats
+            const sLinks = document.getElementById('statLinks');
+            const sClicks = document.getElementById('statClicks');
+            const sCats = document.getElementById('statCats');
+            if (sLinks) sLinks.textContent = cards.length;
+            if (sClicks) sClicks.textContent = totalClicks;
+            if (sCats) sCats.textContent = cats.size;
+
+            // Update analytics tab overall stats
+            const aLinks = document.getElementById('analyticsTotalLinks');
+            const aClicks = document.getElementById('analyticsTotalClicks');
+            const aTop = document.getElementById('analyticsTopLink');
+            if (aLinks) aLinks.textContent = cards.length;
+            if (aClicks) aClicks.textContent = totalClicks;
+            if (aTop) aTop.textContent = topLink || 'N/A';
         }
 
         function toast(msg, icon='✅') {
@@ -825,6 +944,92 @@ Body:    { "fullUrl": "https://example.com",
             document.getElementById('premiumModal').classList.add('open');
         }
 
+        // ── Razorpay Modal Logic ──────────────────────────────────
+        let activePlan = 'elite';
+        let activeAmount = 99;
+        const upiIdBase = '<%= upiId || "yourname@upi" %>';
+
+        function selectPlan(plan, amount) {
+            activePlan = plan;
+            activeAmount = amount;
+            
+            // UI styles update
+            document.querySelectorAll('.plan-card').forEach(c => {
+                c.classList.remove('selected');
+                c.style.borderColor = 'transparent';
+                c.style.background = 'var(--input-bg)';
+            });
+            const selected = document.querySelector(`input[value="${plan}"]`).parentElement;
+            selected.classList.add('selected');
+            selected.style.borderColor = 'var(--primary)';
+            selected.style.background = 'rgba(124,58,237,.05)';
+
+            // Dynamically update QR if open
+            if (document.getElementById('qrContainer').style.display === 'block') updateQR();
+        }
+
+        function updateQR() {
+            const upiString = `upi://pay?pa=${upiIdBase}&pn=LinkSnap&am=${activeAmount}&cu=INR`;
+            document.getElementById('dynamicPaymentQR').src = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(upiString)}&size=200x200`;
+        }
+
+        function toggleQR() {
+            const c = document.getElementById('qrContainer');
+            if(c.style.display === 'none') {
+                c.style.display = 'block';
+                updateQR();
+            } else {
+                c.style.display = 'none';
+            }
+        }
+
+        function payVia(app) {
+            const upiString = `upi://pay?pa=${upiIdBase}&pn=LinkSnap&am=${activeAmount}&cu=INR`;
+            let intentURL = upiString;
+            
+            if(app === 'gpay') intentURL = `tez://upi/pay?pa=${upiIdBase}&pn=LinkSnap&am=${activeAmount}&cu=INR`;
+            else if(app === 'phonepe') intentURL = `phonepe://pay?pa=${upiIdBase}&pn=LinkSnap&am=${activeAmount}&cu=INR`;
+            
+            window.location.href = intentURL;
+            toast(`Opening ${app.toUpperCase()}...`, '💸');
+        }
+
+        async function submitPayment() {
+            const utr = document.getElementById('utrInput').value.trim();
+            if(!utr || utr.length < 8) return toast('Please enter a valid UTR number', '⚠️');
+            
+            const btn = document.getElementById('submitUtrBtn');
+            btn.innerHTML = '<div class="spinner" style="margin: 0 auto;"></div>';
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch('/api/payments/submit', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ utr, planId: activePlan, amount: activeAmount })
+                });
+                const data = await res.json();
+                if(res.ok) {
+                    toast(data.message || 'Payment submitted successfully!', '✅');
+                    closePremiumModal();
+                    document.getElementById('utrInput').value = '';
+                } else {
+                    toast(data.error || 'Submission failed', '❌');
+                }
+            } catch(e) {
+                toast('Network error while submitting payment', '❌');
+            } finally {
+                btn.innerHTML = 'Submit for Verification';
+                btn.disabled = false;
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('mobile-open');
+            overlay.classList.toggle('active');
+        }
     </script>
     
     <% if (needsPassword) { %>
